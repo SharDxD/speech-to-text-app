@@ -1,0 +1,164 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #121212;
+    color: #f0f0f0;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 12px;
+    background-color: #1f1f1f;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+    margin-bottom: 1rem;
+}
+
+button {
+    /* background-color: #2e7d32; */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #388e3c;
+} 
+
+#recordButton.idle {
+    background-color: #2e7d32;  
+  }
+  
+  #recordButton.recording {
+    background-color: #c62828;  
+  }
+  
+  #recordButton {
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+#transcription {
+    font-size: 1.1rem;
+    color: #ccc;
+    white-space: pre-wrap;
+}
+
+/* Add at the end of static/style.css */
+
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background-color: #1c1c1c;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #333;
+    z-index: 1000;
+}
+
+.logout-button {
+    background-color: #8b0000;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.logout-button:hover {
+    background-color: #a00000;
+}
+
+/* Push container down to not overlap the top bar */
+.container {
+    margin-top: 80px;
+}
+
+.error {
+    color: #ff4d4d;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.main-layout {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 100px 40px 40px;
+    max-width: 1100px;
+    margin: auto;
+}
+
+.left-column {
+    flex: 0 0 400px;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 0 0 500px;
+    align-items: stretch;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+
+#transcript-history {
+    background-color: #181818;
+    padding: 15px;
+    border-radius: 12px;
+    width: 100%;
+    min-height: 180px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow: hidden;
+}
+
+
+.audio-wrapper {
+    background-color: #1f1f1f;
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    overflow: hidden;
+}
+
+
+.dark-player {
+    width: 100%;
+    filter: invert(100%) hue-rotate(180deg) brightness(1.2);
+    border-radius: 8px;
+    display: block;
+}

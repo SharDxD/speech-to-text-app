@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Speech to Text</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="top-bar">
+        <span>👤 {{ session.email }} ({{ session.role }})</span>
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+    <div class="main-layout">
+        <div class="left-column">
+            <div class="container">
+                <h1>🎙️ Speech-to-Text App</h1>
+                <button id="recordButton">Start Recording</button>
+                <p><strong>Transcription:</strong></p>
+                <p id="transcription">...</p>
+            </div>
+        </div>
+    
+        <div class="right-column">
+            <div id="transcript-history">
+                <!-- 🎧 Audio player inside the transcript box -->
+                <div class="audio-wrapper" style="display: none;">
+                    <audio class="dark-player" controls></audio>
+                </div>
+        
+                <!-- 📜 Placeholder for cached transcripts -->
+                <p style="color: #888;">(Your past transcriptions will appear here)</p>
+            </div>
+        </div>        
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

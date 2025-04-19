@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.egg-info/
+
+# Flask instance folder
+instance/
+
+# Uploaded files
+uploads/
+
+# Environment files
+.env
+
+# VS Code
+.vscode/
