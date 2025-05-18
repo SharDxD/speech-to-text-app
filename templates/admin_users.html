@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="top-bar">
+        <span>👤 {{ session.email }} ({{ session.role }})</span>
+
+        {% if session.role == 'admin' %}
+            <a href="{{ url_for('index') }}" class="btn admin-manage">← Back to Dashboard</a>
+        {% endif %}
+
+        <a href="/logout" class="logout-button">Logout</a>
+    </div>
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="text-light">User Management</h2>
+    </div>
+
+    <div class="card bg-dark border-0 shadow-sm">
+      <div class="card-body p-0">
+        <table class="table mb-0 table-dark table-striped">
+          <thead>
+            <tr>
+              <th scope="col">Email</th>
+              <th scope="col">Role</th>
+              <th scope="col" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td class="align-middle">{{ u.email }}</td>
+              <td class="align-middle">{{ u.role }}</td>
+              <td class="align-middle text-center">
+                <form
+                  action="{{ url_for('delete_user', user_id=u._id) }}"
+                  method="post"
+                  onsubmit="return confirm('Delete {{ u.email }}?');"
+                  style="display:inline"
+                >
+                  <button
+                    type="submit"
+                    class="btn btn-sm btn-danger"
+                  >Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</html>
