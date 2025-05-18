@@ -8,7 +8,8 @@ stt = pipeline(
     "automatic-speech-recognition",
     model=model_dir,
     device=0,            # 0 for cuda:0
-    chunk_length_s=30,   # whisper models like <=30s segments
+    chunk_length_s=30,     # whisper models like <=30s segments
+    
 )
 
 # run it on a file

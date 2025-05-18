@@ -8,13 +8,26 @@
 <body>
     <div class="top-bar">
         <span>👤 {{ session.email }} ({{ session.role }})</span>
+
+        {% if session.role == 'admin' %}
+            <a href="/admin/users" class="btn admin-manage">Manage Users</a>
+        {% endif %}
+
         <a href="/logout" class="logout-button">Logout</a>
     </div>
     <div class="main-layout">
         <div class="left-column">
             <div class="container">
                 <h1>🎙️ Speech-to-Text App</h1>
-                <button id="recordButton">Start Recording</button>
+                <form id="recorderForm"></form>
+                    <label for="modelSelect">Model:</label>
+                    <select id="modelSelect" name="model">
+                        <option value="rus">Русский</option>
+                        <option value="eng">English</option>
+                        <option value="hun">Magyar</option>
+                    </select>
+                    <button id="recordButton">Start Recording</button>
+                </form>  
                 <p><strong>Transcription:</strong></p>
                 <p id="transcription">...</p>
             </div>
@@ -28,7 +41,21 @@
                 </div>
         
                 <!-- 📜 Placeholder for cached transcripts -->
-                <p style="color: #888;">(Your past transcriptions will appear here)</p>
+                <div class="history-box">
+                    <h3>Your Transcription History</h3>
+                    {% if history %}
+                        <ul class="transcript-list">
+                        {% for entry in history %}
+                        <li>
+                            <span class="transcript-text">{{ entry.text }}</span>
+                            <small>{{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                        </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>(You have no saved transcripts yet.)</p>
+                    {% endif %}
+                </div>
             </div>
         </div>        
     </div>

@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory
+from flask import Flask, abort, render_template, request, jsonify, session, redirect, url_for, send_from_directory
 from auth import auth
-from db import transcripts
+from db import transcripts, users
 import os
 import numpy as np
 import torch
@@ -11,6 +11,8 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
 from pymongo import MongoClient
+from bson.objectid import ObjectId
+from io import BytesIO
 
 UPLOAD_FOLDER = 'uploads'
 app = Flask(__name__)
@@ -21,25 +23,44 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-MODEL_DIR = os.path.join(os.getcwd(), "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny")  
+#MODEL_DIR = os.path.join(os.getcwd(), "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny")  
 
+MODEL_PATHS = {
+    #"poz": "openai/whisper-tiny",
+    "rus": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny",
+    "eng": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny", #change
+    "hun": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny_hu"
+}
 # load processor & model only once
-processor = WhisperProcessor.from_pretrained(MODEL_DIR)
-# model = WhisperForConditionalGeneration.from_pretrained(MODEL_DIR).to("cuda")
 
+#processor = WhisperProcessor.from_pretrained(MODEL_DIR)
+#model = WhisperForConditionalGeneration.from_pretrained(MODEL_DIR).to(device)
+
+processor = {}
+model     = {}
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = WhisperForConditionalGeneration.from_pretrained(MODEL_DIR).to(device)
 
-def transcribe_audio_array(audio: np.ndarray, sampling_rate: int = 16000) -> str:
+for key, path in MODEL_PATHS.items():
+    processor[key] = WhisperProcessor.from_pretrained(path)
+    model[key]     = WhisperForConditionalGeneration.from_pretrained(path).to(device)
+
+
+
+def transcribe_audio_array(selected, audio: np.ndarray, sampling_rate: int = 16000) -> str:
+    # run the transcription with the chosen model
+    proc = processor[selected]
+    mdl  = model[selected]
+    print(mdl)
+
     if sampling_rate != 16000:
         audio = librosa.resample(audio, orig_sr=sampling_rate, target_sr=16000)
     if audio.ndim > 1:
         audio = audio.mean(axis=1)
-    inputs = processor.feature_extractor(audio, sampling_rate=16000, return_tensors="pt")
+    inputs = proc.feature_extractor(audio, sampling_rate=16000, return_tensors="pt")
     inputs = inputs.input_features.to(device)   # use the same device
     with torch.no_grad():
-        generated_ids = model.generate(inputs, max_length=225)
-    return processor.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        generated_ids = mdl.generate(inputs, max_length=225)
+    return proc.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
 def get_transcripts_collection():
     client = MongoClient(
@@ -54,14 +75,23 @@ def get_transcripts_collection():
 def index():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
-    return render_template("index.html")
 
-#@app.route('/', methods=['POST'])
-#def block_spam():
-#    print("🔎 Got POST / from:", request.user_agent.string)
-#    return '', 204
-#def fallback():
-#    return jsonify({'error': 'Please use /transcribe instead.'}), 404
+    user_id = session["user_id"]
+
+    # fetch all transcripts for this user, newest first
+    cursor = transcripts.find(
+        {"user_id": user_id}
+    ).sort("timestamp", -1)
+
+    # build history, skipping any doc without timestamp
+    history = [
+        {"text": d.get("text", ""), "timestamp": d.get("timestamp")}
+        for d in cursor
+        if d.get("timestamp") is not None
+    ]
+
+    return render_template("index.html", history=history)
+
 
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
@@ -71,92 +101,85 @@ def uploaded_file(filename):
 def health_check():
     return jsonify({'status': 'API is running'}), 200
 
-# @app.route("/transcribe", methods=["POST"])
-# def transcribe():
-#     if "user_id" not in session:
-#         return jsonify({"error": "Unauthorized"}), 401
 
-#     if "audio" not in request.files:
-#         return jsonify({"error": "No audio file"}), 400
+@app.route('/admin/users', methods=['GET'])
+def admin_users():
+    # only admins may view
+    if session.get('role') != 'admin':
+        return abort(403)
 
-#     audio_file = request.files["audio"]
-#     filename = f"{datetime.utcnow().timestamp()}_{audio_file.filename}"
-#     filepath = os.path.join(UPLOAD_FOLDER, filename)
-#     audio_file.save(filepath)
+    # pull all user docs
+    all_users = list(users.find({}, {'_id': 1, 'email': 1, 'role': 1}))
+    return render_template('admin_users.html', users=all_users)
 
-#     # Save to DB
-#     transcripts.insert_one({
-#         "user_id": session["user_id"],
-#         "filename": filename,
-#         "timestamp": datetime.utcnow(),
-#         "text": "This is a placeholder transcription"
-#     })
+@app.route('/admin/users/delete/<user_id>', methods=['POST'])
+def delete_user(user_id):
+    if session.get('role') != 'admin':
+        return abort(403)
 
-#     return jsonify({
-#         "transcription": "This is a placeholder transcription",
-#         "audio_url": f"/uploads/{filename}"
-#     })
+    try:
+        users.delete_one({'_id': ObjectId(user_id)})
+    except Exception:
+        # you could flash an error here
+        pass
+
+    return redirect(url_for('admin_users'))
+
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    if "audio" not in request.files:
-        return jsonify({"error": "No audio file"}), 400
+    if "audio" not in request.files or "model" not in request.form:
+        return jsonify({"error": "Must send both audio file and model"}), 400
+    
+    selected = request.form["model"]
+    if selected not in MODEL_PATHS:
+        return jsonify({"error": f"Unknown model '{selected}'"}), 400
+    
 
     audio_file = request.files["audio"]
-    # secure and timestamp the filename
-    filename = f"{datetime.utcnow().timestamp()}_{secure_filename(audio_file.filename)}"
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    audio_file.save(filepath)
+    raw_bytes  = audio_file.read()
 
-    # read back into numpy array (any format ffmpeg/browser recorder produces)
-    #audio, sr = sf.read(filepath, dtype="float32")
+    webm_io = BytesIO(raw_bytes)
+    audio_seg = AudioSegment.from_file(webm_io, format="webm")
+    audio_seg = audio_seg.set_frame_rate(16000).set_channels(1)
+    wav_io   = BytesIO()
+    audio_seg.export(wav_io, format="wav")
+    wav_io.seek(0)
 
-    # if it’s a WebM, convert it to WAV first
-    ext = os.path.splitext(filepath)[1].lower()
-    if ext == ".webm":
-        wav_path = filepath[:-5] + ".wav"
-        audio_segment = AudioSegment.from_file(filepath, format="webm")
-        audio_segment = audio_segment.set_frame_rate(16000).set_channels(1)
-        audio_segment.export(wav_path, format="wav")
-        read_path = wav_path
-    else:
-        read_path = filepath
-    #print("test")
-    # now read the WAV (or whatever)
-    audio, sr = sf.read(read_path, dtype="float32")
-    #print("test2")
+    # 2) Read that WAV bytes via soundfile
+    audio, sr = sf.read(wav_io, dtype="float32")
+
+    # 3) Run your transcription helper, which takes numpy+sr
     try:
-        # run your helper
-        #print("test3")
-        transcription = transcribe_audio_array(audio, sampling_rate=sr)
-        #print("test4:", transcription)
+        # run the transcription with the chosen model
+        transcription = transcribe_audio_array(selected, audio, sampling_rate=sr)
     except Exception as e:
-        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-    # persist into MongoDB
-    # transcripts.insert_one({
-    #     "user_id": session["user_id"],
-    #     "filename": filename,
-    #     "timestamp": datetime.utcnow(),
-    #     "text": transcription
-    # })
 
-    col = get_transcripts_collection()
-    col.insert_one({
-         "user_id": session["user_id"],
-         "filename": filename,
-         "timestamp": datetime.utcnow(),
-         "text": transcription
+    transcripts.insert_one({
+        "user_id": session["user_id"],
+        "model": selected,
+        # "filename": filename,
+        "timestamp": datetime.now(),
+        "text": transcription
     })
 
+    user_id = session["user_id"]
+    cursor = transcripts.find(
+        {"user_id": user_id},
+        {"_id": 0, "text": 1, "timestamp": 1}
+    ).sort("timestamp", -1)
+
+    history = [doc["text"] for doc in cursor]
 
     return jsonify({
         "transcription": transcription,
-        "audio_url": f"/uploads/{filename}"
+        "history": history,
+        # "audio_url": f"/uploads/{filename}"
     })
 
 
