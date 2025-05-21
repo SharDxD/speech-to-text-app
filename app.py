@@ -2,6 +2,7 @@ from flask import Flask, abort, render_template, request, jsonify, session, redi
 from auth import auth
 from db import transcripts, users
 import os
+from pathlib import Path
 import numpy as np
 import torch
 import soundfile as sf
@@ -16,33 +17,31 @@ from io import BytesIO
 
 UPLOAD_FOLDER = 'uploads'
 app = Flask(__name__)
-app.secret_key = "keykeykey"  #temp
+app.secret_key = "keykeykey"  #temp not for prod
 app.register_blueprint(auth)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-#MODEL_DIR = os.path.join(os.getcwd(), "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny")  
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 MODEL_PATHS = {
     #"poz": "openai/whisper-tiny",
-    "rus": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny",
-    "eng": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny", #change
-    "hun": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny_hu"
+    "rus": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyru", #os.path.join(BASEDIR, "models", "tinyru"),
+    "eng": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny", #change to os.path.join(BASEDIR, "models", "ft_quick_tiny_en"),
+    "hun": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyhu"
 }
-# load processor & model only once
-
-#processor = WhisperProcessor.from_pretrained(MODEL_DIR)
-#model = WhisperForConditionalGeneration.from_pretrained(MODEL_DIR).to(device)
-
 processor = {}
 model     = {}
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 for key, path in MODEL_PATHS.items():
-    processor[key] = WhisperProcessor.from_pretrained(path)
-    model[key]     = WhisperForConditionalGeneration.from_pretrained(path).to(device)
+    #path = os.path.abspath(path).replace("\\", "/")
+    path = Path(path)
+    if not path.is_dir():
+        raise RuntimeError(f"Model directory not found: {path}")
+    processor[key] = WhisperProcessor.from_pretrained(path, local_files_only=True)
+    model[key]     = WhisperForConditionalGeneration.from_pretrained(path, local_files_only=True).to(device)
 
 
 
@@ -50,7 +49,6 @@ def transcribe_audio_array(selected, audio: np.ndarray, sampling_rate: int = 160
     # run the transcription with the chosen model
     proc = processor[selected]
     mdl  = model[selected]
-    print(mdl)
 
     if sampling_rate != 16000:
         audio = librosa.resample(audio, orig_sr=sampling_rate, target_sr=16000)
@@ -185,3 +183,4 @@ def transcribe():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5050, use_reloader=False)
+
