@@ -8,11 +8,9 @@
 <body>
     <div class="top-bar">
         <span>👤 {{ session.email }} ({{ session.role }})</span>
-
         {% if session.role == 'admin' %}
             <a href="{{ url_for('index') }}" class="btn admin-manage">← Back to Dashboard</a>
         {% endif %}
-
         <a href="/logout" class="logout-button">Logout</a>
     </div>
   <div class="container py-4">

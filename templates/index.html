@@ -8,11 +8,9 @@
 <body>
     <div class="top-bar">
         <span>👤 {{ session.email }} ({{ session.role }})</span>
-
         {% if session.role == 'admin' %}
             <a href="/admin/users" class="btn admin-manage">Manage Users</a>
         {% endif %}
-
         <a href="/logout" class="logout-button">Logout</a>
     </div>
     <div class="main-layout">

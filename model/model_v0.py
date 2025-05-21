@@ -11,7 +11,6 @@ stt = pipeline(
     chunk_length_s=30,     # whisper models like <=30s segments
     
 )
-
 # run it on a file
 result = stt("C:/Users/kirig/Documents/thesis/uploads/common_voice_ru_18849869.mp3")  
 print("Transcription:", result["text"])

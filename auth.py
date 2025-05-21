@@ -13,7 +13,8 @@ def register():
         role = request.form.get("role", "client")
 
         if users.find_one({"email": email}):
-            return "User already exists"
+            return render_template("register.html", error="User already exists")
+
 
         hashed_pw = generate_password_hash(password)
         users.insert_one({
@@ -30,7 +31,6 @@ def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
-
         user = users.find_one({"email": email})
         if not user or not check_password_hash(user["password"], password):
             return render_template("login.html", error="Invalid credentials")
@@ -46,3 +46,4 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("auth.login"))
+
