@@ -28,7 +28,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 MODEL_PATHS = {
     #"poz": "openai/whisper-tiny",
     "rus": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyru", #os.path.join(BASEDIR, "models", "tinyru"),
-    "eng": "C:/Users/kirig/Documents/model_0/whisper-finetune/ft_quick_tiny", #change to os.path.join(BASEDIR, "models", "ft_quick_tiny_en"),
+    "eng": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyru", #change to Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyen",
     "hun": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyhu"
 }
 processor = {}
