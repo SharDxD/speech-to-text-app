@@ -6,11 +6,13 @@ const recordButton = document.getElementById('recordButton');
 const modelSelect   = document.getElementById("modelSelect");
 const transcriptionBox = document.getElementById('transcription');
 const historyList = document.querySelector('.transcript-list');
+
 const audioPlayer = document.querySelector(".dark-player");
 const audioWrapper = document.querySelector(".audio-wrapper");
 recordButton.classList.add('idle');
 
 recordButton.addEventListener('click', async () => {
+
 
     if (mediaRecorder && mediaRecorder.state === "recording") {
         // to stop
@@ -61,6 +63,13 @@ recordButton.addEventListener('click', async () => {
                 const ss   = pad2(now.getSeconds());
                 const ts   = `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss}`;
 
+                // const ts = now.toLocaleString([], {
+                //     year: 'numeric', month: '2-digit',
+                //     day: '2-digit', hour: '2-digit',
+                //     minute: '2-digit', second: '2-digit'
+                // });
+
+                    // insert both text + timestamp
                 li.innerHTML = `
                     <span class="transcript-text">${old}</span>
                     <small class="transcript-time">${ts}</small>
