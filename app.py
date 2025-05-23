@@ -28,7 +28,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 MODEL_PATHS = {
     #"poz": "openai/whisper-tiny",
     "rus": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyru", #os.path.join(BASEDIR, "models", "tinyru"),
-    "eng": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyru", #change to Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyen",
+    "eng": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyen",
     "hun": Path(BASEDIR) / "model" / "whisper-finetune-my" / "tinyhu"
 }
 processor = {}
@@ -147,10 +147,10 @@ def transcribe():
     audio_seg.export(wav_io, format="wav")
     wav_io.seek(0)
 
-    # 2) Read that WAV bytes via soundfile
+    # Read that WAV bytes via soundfile
     audio, sr = sf.read(wav_io, dtype="float32")
 
-    # 3) Run your transcription helper, which takes numpy+sr
+    # Run your transcription helper, which takes numpy+sr
     try:
         # run the transcription with the chosen model
         transcription = transcribe_audio_array(selected, audio, sampling_rate=sr)
