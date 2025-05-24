@@ -1,0 +1,252 @@
+openapi: 3.0.3
+info:
+  title: Flask Speech Transcription API
+  version: 1.0.0
+  description: |
+    Endpoints for user registration, login, transcription, admin user management, static uploads, and health checks.
+
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: http://localhost:5000
+    description: Local development
+
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: API is running
+
+    Transcript:
+      type: object
+      properties:
+        text:
+          type: string
+          example: Hello world
+        timestamp:
+          type: string
+          format: date-time
+          example: '2025-05-24T12:34:56Z'
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 60d5ec49f2954b2e9c7c9f44
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        role:
+          type: string
+          enum: [admin, client]
+          example: client
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Unauthorized
+
+paths:
+  /:
+    get:
+      summary: Main UI (HTML)
+      description: Returns the dashboard with transcript history.
+      security:
+        - SessionCookie: []
+      responses:
+        '302':
+          description: Redirect to login if not authenticated
+        '200':
+          description: HTML dashboard page
+
+  /uploads/{filename}:
+    get:
+      summary: Serve uploaded file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: API is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /admin/users:
+    get:
+      summary: List all users (admin only)
+      security:
+        - SessionCookie: []
+      responses:
+        '200':
+          description: HTML admin users page
+        '403':
+          description: Forbidden
+
+  /admin/users/delete/{user_id}:
+    post:
+      summary: Delete a user (admin only)
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - SessionCookie: []
+      responses:
+        '302':
+          description: Redirect back to user list
+        '403':
+          description: Forbidden
+
+  /transcribe:
+    post:
+      summary: Transcribe an audio file
+      description: Returns a JSON transcription result.
+      security:
+        - SessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                model:
+                  type: string
+                  description: Model ID key
+              required:
+                - audio
+                - model
+      responses:
+        '200':
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    example: Transcribed text here.
+                  duration:
+                    type: number
+                    format: float
+                    example: 3.42
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /register:
+    get:
+      summary: Registration form
+      responses:
+        '200':
+          description: HTML registration page
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                role:
+                  type: string
+                  enum: [admin, client]
+              required:
+                - email
+                - password
+      responses:
+        '302':
+          description: Redirect to login on success
+        '200':
+          description: HTML with error if user exists
+
+  /login:
+    get:
+      summary: Login form
+      responses:
+        '200':
+          description: HTML login page
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
+      responses:
+        '302':
+          description: Redirect to main page on success
+        '200':
+          description: HTML with error on invalid credentials
+
+  /logout:
+    get:
+      summary: Logout current user
+      responses:
+        '302':
+          description: Redirect to login
