@@ -14,4 +14,5 @@ To evaluate my finetuning, I wrote a small evaluation script that loads my tuned
 Rather than comparing all predictions at once, I compute per-sample WER iteratively and then aggregate statistics: average, median, and worst cases.
 
 Web-app:
-1) Flask+MongoDB+(HTMSL, CSS, JS)+Gunicorn+Nginx //or MicroStack as an alternative
+Flask+MongoDB+(HTMSL, CSS, JS)+Gunicorn+Nginx //or MicroStack as an alternative
+
